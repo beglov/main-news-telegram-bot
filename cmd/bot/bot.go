@@ -1,18 +1,27 @@
 package main
 
 import (
+	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	"io/ioutil"
 	"log"
 	"os"
 )
 
+const filePath = "chatIDS.json"
+
 func main() {
 	godotenv.Load(".env")
 
+	chatIDS, err := readChatIDS()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
 	bot.Debug = true
@@ -41,6 +50,11 @@ func main() {
 			continue
 		}
 
+		chatIDS, err = saveChatID(chatIDS, update.Message.Chat.ID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		// Now that we know we've gotten a new message, we can construct a
 		// reply! We'll take the Chat ID and Text from the incoming message
 		// and use it to create a new message.
@@ -48,4 +62,52 @@ func main() {
 
 		bot.Send(msg)
 	}
+}
+
+func saveChatID(chatIDS []int64, chatID int64) ([]int64, error) {
+	for _, id := range chatIDS {
+		if id == chatID {
+			return chatIDS, nil // chatID already exists, return without modifying the slice
+		}
+	}
+
+	// chatID does not exist, add it to the slice
+	chatIDS = append(chatIDS, chatID)
+
+	// Marshal the chatIDS slice to JSON
+	data, err := json.Marshal(chatIDS)
+	if err != nil {
+		return nil, err
+	}
+
+	// Write the JSON data to a file
+	err = ioutil.WriteFile(filePath, data, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return chatIDS, nil
+}
+
+func readChatIDS() (chatIDS []int64, err error) {
+	_, err = os.Stat(filePath)
+
+	if err != nil {
+		// File does't exists
+		return chatIDS, nil
+	}
+
+	// Read the JSON data from the file
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the JSON data into a []int64 slice
+	err = json.Unmarshal(data, &chatIDS)
+	if err != nil {
+		return nil, err
+	}
+
+	return chatIDS, nil
 }
