@@ -60,7 +60,10 @@ func main() {
 		// and use it to create a new message.
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Вы подписалиль на получение главных новостей дня! Первое сообщение придет в течение суток.")
 
-		bot.Send(msg)
+		_, err = bot.Send(msg)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 }
 
@@ -92,8 +95,8 @@ func saveChatID(chatIDS []int64, chatID int64) ([]int64, error) {
 func readChatIDS() (chatIDS []int64, err error) {
 	_, err = os.Stat(filePath)
 
+	// File doesn't exists
 	if err != nil {
-		// File does't exists
 		return chatIDS, nil
 	}
 
