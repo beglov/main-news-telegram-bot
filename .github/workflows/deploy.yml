@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build bot
+        run: go build -o bot cmd/bot/bot.go
+
+      - name: Build send_news
+        run: go build -o send_news cmd/send_news/send_news.go
+
+      - name: Copy binary to servers
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.remote_host }}
+          username: ${{ secrets.remote_user }}
+          key: ${{ secrets.ssh_private_key }}
+          source: "bot,send_news"
+          target: "~/main-news-telegram-bot"
+
+      - name: Restart Remote Systemd Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.remote_host }}
+          username: ${{ secrets.remote_user }}
+          key: ${{ secrets.ssh_private_key }}
+          script: |
+            sudo systemctl restart main-news-telegram-bot
