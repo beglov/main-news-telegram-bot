@@ -185,15 +185,13 @@ func getNews() ([]Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("%+v\n", res)
-	//fmt.Printf("%+v\n", string(body))
+	log.Printf("Rapid API response:\n%s", string(body))
 
 	var data Response
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("%+v\n", data)
 
 	messages := reverseSlice(data.Messages)
 

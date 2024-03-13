@@ -1,3 +1,5 @@
 .env
 chatIDS.json
 newsIDS.json
+bot
+send_news
