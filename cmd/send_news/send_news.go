@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -175,13 +176,17 @@ func getNews() ([]Message, error) {
 	req.Header.Add("X-RapidAPI-Key", os.Getenv("RAPID_API_KEY"))
 	req.Header.Add("X-RapidAPI-Host", "telegram92.p.rapidapi.com")
 
-	res, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("rapid API response status code error: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +196,9 @@ func getNews() ([]Message, error) {
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		return nil, err
+	}
+	if len(data.Messages) == 0 {
+		return nil, errors.New("news not received")
 	}
 
 	messages := reverseSlice(data.Messages)
