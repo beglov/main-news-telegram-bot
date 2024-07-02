@@ -64,13 +64,20 @@ After=network.target
 User=deploy
 WorkingDirectory=/home/deploy/main-news-telegram-bot
 ExecStart=/home/deploy/main-news-telegram-bot/bot
+
 Environment=TELEGRAM_BOT_TOKEN=secret
 Environment=RAPID_API_KEY=secret
 Environment=POSTS_COUNT=50
 
+Restart=on-failure
+RestartSec=1
+
 [Install]
 WantedBy=multi-user.target
 
+# See these pages for lots of options:
+#   https://www.freedesktop.org/software/systemd/man/systemd.service.html
+#   https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 ```
 
 _Make sure to replace the environment variables with your own values._
@@ -110,7 +117,7 @@ That's it! Your Golang program should now be running on your VDS and will automa
    - Edit the crontab file using the command: `crontab -e`
    - In the crontab file, add a new line with the following syntax:
       ```
-      0 * * * * cd /home/deploy/main-news-telegram-bot && ./send_news
+      0 * * * * cd /home/deploy/main-news-telegram-bot && ./send_news > cron_output.txt 2>&1
       ```
    - Save and exit the crontab file.
 
