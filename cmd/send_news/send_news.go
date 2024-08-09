@@ -183,7 +183,7 @@ func getNews() ([]Message, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("rapid API response status code error: %d %s", resp.StatusCode, resp.Status)
+		return nil, fmt.Errorf("rapid API response status %d: %s", resp.StatusCode, resp.Body)
 	}
 
 	body, err := io.ReadAll(resp.Body)
