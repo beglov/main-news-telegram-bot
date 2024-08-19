@@ -3,13 +3,15 @@
   apt:
     update_cache: yes
     upgrade: dist
+    cache_valid_time: 600  # Only update if the cache is older than 10 minutes
 
-- name: Ensure the target directory exists
+- name: Ensure directory exists
   file:
-    path: /home/deploy/main-news-telegram-bot
+    path: /home/deploy/main-news-telegram-bot/
     state: directory
-    owner: deploy
-    group: deploy
+    owner: deploy  # Set the owner to your user
+    group: deploy  # Set the group to your user group
+    mode: '0755'   # Set directory permissions
 
 - name: Copy binary to remote host
   copy:
@@ -23,9 +25,9 @@
   copy:
     src: ../../../send_news
     dest: /home/deploy/main-news-telegram-bot/send_news
-    owner: deploy
-    group: deploy
-    mode: '0755'
+    owner: deploy  # Change owner if needed
+    group: deploy  # Change group if needed
+    mode: '0755'   # Make the binary executable
 
 - name: Copy systemd service file
   template:
@@ -46,13 +48,14 @@
   template:
     src: env.j2
     dest: /home/deploy/main-news-telegram-bot/.env
-    owner: deploy
-    group: deploy
+    owner: deploy  # Change owner if needed
+    group: deploy  # Change group if needed
+    mode: '0644'   # Set file permissions
 
 - name: Add cron job to run send_news every hour
   cron:
     name: "Run send_news every hour"
     minute: "0"
     hour: "*"
+    user: deploy  # User under which to run the cron job
     job: "cd /home/deploy/main-news-telegram-bot && ./send_news > cron_output.txt 2>&1"
-    user: deploy
