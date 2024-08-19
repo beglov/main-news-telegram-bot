@@ -1,0 +1,4 @@
+---
+- name: This role contains bot role
+  import_tasks: tasks.yml
+  tags: [ bot ]

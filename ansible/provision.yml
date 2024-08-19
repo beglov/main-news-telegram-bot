@@ -1,0 +1,6 @@
+---
+- name: Deploy Main News Telegram Bot
+  hosts: all
+  become: yes
+  roles:
+    - { role: bot }
