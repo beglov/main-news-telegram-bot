@@ -25,6 +25,19 @@ go run cmd/send_news/send_news.go
 
 ## Deploy to VDS
 
+### Ansible
+
+Edit server access details in inventory file `ansible/inventories/staging.yml`
+and API secrets in `ansible/group_vars/staging/bot.yml`.
+
+After that you can run from project directory:
+
+```bash
+make deploy
+```
+
+### Manual
+
 To deploy a Golang program to a VDS (Virtual Dedicated Server), you can follow these steps:
 
 1. Build your golang program - Before deploying your program, you need to build it.
@@ -45,7 +58,7 @@ scp bot deploy@127.0.0.1:~/main-news-telegram-bot
 scp send_news deploy@127.0.0.1:~/main-news-telegram-bot
 ```
 
-### Deploy bot
+#### Deploy bot
 
 3. Create a new systemd file:
 
@@ -108,7 +121,7 @@ sudo systemctl enable main-news-telegram-bot
 
 That's it! Your Golang program should now be running on your VDS and will automatically start up whenever your server reboots.
 
-### Deploy send_news
+#### Deploy send_news
 
 8. Add .env file with your credentials. For an example, see the .env.sample file.
 

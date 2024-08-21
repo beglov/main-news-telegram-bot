@@ -1,0 +1,62 @@
+---
+- name: Update system packages
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+    cache_valid_time: 600 # Only update if the cache is older than 10 minutes
+
+- name: Ensure directory exists
+  ansible.builtin.file:
+    path: /home/deploy/main-news-telegram-bot/
+    state: directory
+    owner: deploy # Set the owner to your user
+    group: deploy # Set the group to your user group
+    mode: "0755" # Set directory permissions
+
+- name: Copy binary to remote host
+  ansible.builtin.copy:
+    src: ../../../bot
+    dest: /home/deploy/main-news-telegram-bot/bot
+    owner: deploy
+    group: deploy
+    mode: "0755"
+
+- name: Copy binary to remote host
+  ansible.builtin.copy:
+    src: ../../../send_news
+    dest: /home/deploy/main-news-telegram-bot/send_news
+    owner: deploy # Change owner if needed
+    group: deploy # Change group if needed
+    mode: "0755" # Make the binary executable
+
+- name: Copy systemd service file
+  ansible.builtin.template:
+    src: main-news-telegram-bot.service.j2
+    dest: /etc/systemd/system/main-news-telegram-bot.service
+    mode: "0644"
+
+- name: Reload systemd to recognize new service
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Start and enable the service
+  ansible.builtin.systemd_service:
+    name: main-news-telegram-bot
+    enabled: true
+    state: restarted
+
+- name: Copy .env file
+  ansible.builtin.template:
+    src: env.j2
+    dest: /home/deploy/main-news-telegram-bot/.env
+    owner: deploy # Change owner if needed
+    group: deploy # Change group if needed
+    mode: "0644" # Set file permissions
+
+- name: Add cron job to run send_news every hour
+  ansible.builtin.cron:
+    name: Run send_news every hour
+    minute: "0"
+    hour: "*"
+    user: deploy # User under which to run the cron job
+    job: cd /home/deploy/main-news-telegram-bot && ./send_news > cron_output.txt 2>&1
