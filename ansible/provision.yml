@@ -1,6 +1,6 @@
 ---
 - name: Deploy Main News Telegram Bot
   hosts: all
-  become: yes
+  become: true
   roles:
     - { role: bot }
