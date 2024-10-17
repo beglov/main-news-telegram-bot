@@ -9,6 +9,7 @@ ExecStart=/home/deploy/main-news-telegram-bot/bot
 
 Environment=TELEGRAM_BOT_TOKEN={{ telegram_bot_token }}
 Environment=RAPID_API_KEY={{ rapid_api_key }}
+Environment=TELEGRAM_CHANNELS={{ telegram_channels }}
 Environment=POSTS_COUNT={{ posts_count }}
 
 Restart=on-failure

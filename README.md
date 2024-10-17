@@ -80,6 +80,7 @@ ExecStart=/home/deploy/main-news-telegram-bot/bot
 
 Environment=TELEGRAM_BOT_TOKEN=secret
 Environment=RAPID_API_KEY=secret
+Environment=TELEGRAM_CHANNELS=channel1,channel2
 Environment=POSTS_COUNT=50
 
 Restart=on-failure

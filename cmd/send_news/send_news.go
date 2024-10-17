@@ -60,6 +60,7 @@ func main() {
 	if len(channels) == 0 {
 		log.Fatal("telegram channels is empty")
 	}
+	fmt.Println(len(channels), "TELEGRAM CHANNELS:", channels)
 
 	news, err := getNews(channels)
 	if err != nil {
@@ -100,8 +101,6 @@ func readChannels(channelsStr string) []string {
 			filteredChannels = append(filteredChannels, channel)
 		}
 	}
-
-	fmt.Println(len(filteredChannels), "TELEGRAM CHANNELS:", filteredChannels)
 
 	return filteredChannels
 }
