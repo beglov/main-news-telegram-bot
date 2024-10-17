@@ -56,7 +56,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	channels := []string{"lentadnya", "bbcrussian"}
+	channels := readChannels()
+	if len(channels) == 0 {
+		log.Fatal("telegram channels is empty")
+	}
 
 	news, err := getNews(channels)
 	if err != nil {
@@ -82,6 +85,30 @@ func main() {
 			}
 		}
 	}
+}
+
+func readChannels() []string {
+	str := os.Getenv("TELEGRAM_CHANNELS")
+
+	if str == "" {
+		// If the environment variable is not set, return an empty slice.
+		return []string{}
+	}
+
+	channels := strings.Split(str, ",")
+
+	// This filters out any empty strings from the slice.
+	// Making sure there are no empty channel names in the returned slice.
+	var filteredChannels []string
+	for _, channel := range channels {
+		if channel != "" {
+			filteredChannels = append(filteredChannels, channel)
+		}
+	}
+
+	fmt.Println(len(filteredChannels), "TELEGRAM CHANNELS:", filteredChannels)
+
+	return filteredChannels
 }
 
 func alreadySend(newsIDS []int, message Message) bool {
@@ -166,9 +193,7 @@ func saveNewsID(newsIDS []int, newsID int) ([]int, error) {
 }
 
 // getNews возвращает главные новости для переданного списка телеграм каналов.
-func getNews(channels []string) ([]Message, error) {
-	var news []Message
-
+func getNews(channels []string) (news []Message, err error) {
 	for _, channel := range channels {
 		url := fmt.Sprintf("https://telegram92.p.rapidapi.com/api/history/channel?channel=%s&limit=%s&offset=%s", channel, os.Getenv("POSTS_COUNT"), offset)
 
