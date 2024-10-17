@@ -56,6 +56,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	bot.Debug = true
+
 	channels := readChannels(os.Getenv("TELEGRAM_CHANNELS"))
 	if len(channels) == 0 {
 		log.Fatal("telegram channels is empty")
@@ -70,6 +72,7 @@ func main() {
 	for _, message := range news {
 		for _, chatID := range chatIDS {
 			if alreadySend(newsIDS, message) {
+				log.Printf("message %d already send", message.ID)
 				continue
 			}
 
@@ -213,7 +216,7 @@ func getNews(channels []string) (news []Message, err error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("Rapid API response:\n%s", string(body))
+		log.Printf("Rapid API response for %s channel:\n%s", channel, string(body))
 
 		var data Response
 		err = json.Unmarshal(body, &data)
