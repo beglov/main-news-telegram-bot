@@ -56,7 +56,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	channels := readChannels()
+	channels := readChannels(os.Getenv("TELEGRAM_CHANNELS"))
 	if len(channels) == 0 {
 		log.Fatal("telegram channels is empty")
 	}
@@ -87,18 +87,13 @@ func main() {
 	}
 }
 
-func readChannels() []string {
-	str := os.Getenv("TELEGRAM_CHANNELS")
-
-	if str == "" {
-		// If the environment variable is not set, return an empty slice.
+func readChannels(channelsStr string) []string {
+	if channelsStr == "" {
 		return []string{}
 	}
 
-	channels := strings.Split(str, ",")
+	channels := strings.Split(channelsStr, ",")
 
-	// This filters out any empty strings from the slice.
-	// Making sure there are no empty channel names in the returned slice.
 	var filteredChannels []string
 	for _, channel := range channels {
 		if channel != "" {
