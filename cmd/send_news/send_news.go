@@ -17,7 +17,6 @@ import (
 
 const chatIDSFilePath = "chatIDS.json"
 const newsIDSFilePath = "newsIDS.json"
-const channel = "lentadnya"
 const offset = "0"
 
 type Message struct {
@@ -57,7 +56,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	news, err := getNews()
+	channels := []string{"lentadnya", "bbcrussian"}
+
+	news, err := getNews(channels)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -164,62 +165,65 @@ func saveNewsID(newsIDS []int, newsID int) ([]int, error) {
 	return newsIDS, nil
 }
 
-// getNews возвращает главные новости ленты дня - это главное за ночь и главное за день.
-func getNews() ([]Message, error) {
-	url := fmt.Sprintf("https://telegram92.p.rapidapi.com/api/history/channel?channel=%s&limit=%s&offset=%s", channel, os.Getenv("POSTS_COUNT"), offset)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("X-RapidAPI-Key", os.Getenv("RAPID_API_KEY"))
-	req.Header.Add("X-RapidAPI-Host", "telegram92.p.rapidapi.com")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("rapid API response status %d: %s", resp.StatusCode, resp.Body)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Rapid API response:\n%s", string(body))
-
-	var data Response
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return nil, err
-	}
-	if len(data.Messages) == 0 {
-		return nil, errors.New("news not received")
-	}
-
-	messages := reverseSlice(data.Messages)
-
+// getNews возвращает главные новости для переданного списка телеграм каналов.
+func getNews(channels []string) ([]Message, error) {
 	var news []Message
-	for _, message := range messages {
-		str := message.Html
-		if str == "" {
-			continue
+
+	for _, channel := range channels {
+		url := fmt.Sprintf("https://telegram92.p.rapidapi.com/api/history/channel?channel=%s&limit=%s&offset=%s", channel, os.Getenv("POSTS_COUNT"), offset)
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
 		}
-		if !isMainNews(str) {
-			continue
+
+		req.Header.Add("X-RapidAPI-Key", os.Getenv("RAPID_API_KEY"))
+		req.Header.Add("X-RapidAPI-Host", "telegram92.p.rapidapi.com")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
 		}
-		// Remove <br /> and <br> tags from the string
-		re := regexp.MustCompile(`<br\s+/?>`)
-		cleanStr := re.ReplaceAllString(str, "")
-		post := Message{
-			ID:   message.ID,
-			Html: cleanStr,
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("rapid API response status %d: %s", resp.StatusCode, resp.Body)
 		}
-		news = append(news, post)
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("Rapid API response:\n%s", string(body))
+
+		var data Response
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			return nil, err
+		}
+		if len(data.Messages) == 0 {
+			return nil, errors.New("news not received")
+		}
+
+		messages := reverseSlice(data.Messages)
+
+		for _, message := range messages {
+			str := message.Html
+			if str == "" {
+				continue
+			}
+			if !isMainNews(str) {
+				continue
+			}
+			// Remove <br /> and <br> tags from the string
+			re := regexp.MustCompile(`<br\s+/?>`)
+			cleanStr := re.ReplaceAllString(str, "")
+			post := Message{
+				ID:   message.ID,
+				Html: cleanStr,
+			}
+			news = append(news, post)
+		}
 	}
 
 	return news, nil
@@ -236,6 +240,7 @@ func reverseSlice(slice []Message) []Message {
 	return reversedSlice
 }
 
+// isMainNews определяет является ли новость "главной".
 func isMainNews(str string) bool {
 	return strings.Count(str, "</a>") > 3
 }
