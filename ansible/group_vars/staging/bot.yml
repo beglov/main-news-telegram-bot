@@ -1,4 +1,5 @@
 ---
 telegram_bot_token: secret
 rapid_api_key: secret
+telegram_channels: channel1,channel2
 posts_count: 50
