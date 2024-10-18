@@ -16,7 +16,7 @@ import (
 )
 
 const chatIDSFilePath = "chatIDS.json"
-const newsIDSFilePath = "newsIDS.json"
+const newsIDSFilePath = "newsIDS_new.json"
 const offset = "0"
 
 type Message struct {
@@ -28,6 +28,7 @@ type Message struct {
 	Text     string `json:"text"`
 	Html     string `json:"html"`
 	Photo    string `json:"photo"`
+	Channel  string
 }
 
 type Response struct {
@@ -46,7 +47,7 @@ func main() {
 		log.Fatal("chatIDS is empty")
 	}
 
-	newsIDS, err := readNewsIDS()
+	newsIDS, err := readAlreadySendNewsIDS()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +81,7 @@ func main() {
 			msg.ParseMode = "HTML"
 			_, err = bot.Send(msg)
 			if err == nil {
-				newsIDS, err = saveNewsID(newsIDS, message.ID)
+				newsIDS, err = saveAlreadySendNews(newsIDS, message)
 				if err != nil {
 					log.Print(err)
 				}
@@ -108,14 +109,22 @@ func readChannels(channelsStr string) []string {
 	return filteredChannels
 }
 
-func alreadySend(newsIDS []int, message Message) bool {
+// alreadySend проверяет отправлялась ли пользователям новость ранее.
+func alreadySend(newsIDS []string, message Message) bool {
+	compositeID := buildCompositeID(message)
+
 	for _, id := range newsIDS {
-		if id == message.ID {
+		if id == compositeID {
 			return true
 		}
 	}
 
 	return false
+}
+
+// buildCompositeID возвращает составной ID новости который состоит из названия канала и message.ID.
+func buildCompositeID(message Message) string {
+	return fmt.Sprintf("%s_%d", message.Channel, message.ID)
 }
 
 func readChatIDS() (chatIDS []int64, err error) {
@@ -141,7 +150,8 @@ func readChatIDS() (chatIDS []int64, err error) {
 	return chatIDS, nil
 }
 
-func readNewsIDS() (newsIDS []int, err error) {
+// readAlreadySendNewsIDS возвращает список ID-шников уже отправленных новостей.
+func readAlreadySendNewsIDS() (newsIDS []string, err error) {
 	_, err = os.Stat(newsIDSFilePath)
 
 	// File doesn't exists
@@ -155,7 +165,7 @@ func readNewsIDS() (newsIDS []int, err error) {
 		return nil, err
 	}
 
-	// Unmarshal the JSON data into a []int64 slice
+	// Unmarshal the JSON data into a []string slice
 	err = json.Unmarshal(data, &newsIDS)
 	if err != nil {
 		return nil, err
@@ -164,15 +174,18 @@ func readNewsIDS() (newsIDS []int, err error) {
 	return newsIDS, nil
 }
 
-func saveNewsID(newsIDS []int, newsID int) ([]int, error) {
+// saveAlreadySendNews помечает новость как отправленную и сохраняет данные на диск.
+func saveAlreadySendNews(newsIDS []string, message Message) ([]string, error) {
+	compositeID := buildCompositeID(message)
+
 	for _, id := range newsIDS {
-		if id == newsID {
+		if id == compositeID {
 			return newsIDS, nil // newsID already exists, return without modifying the slice
 		}
 	}
 
 	// newsID does not exist, add it to the slice
-	newsIDS = append(newsIDS, newsID)
+	newsIDS = append(newsIDS, compositeID)
 
 	// Marshal the newsIDS slice to JSON
 	data, err := json.Marshal(newsIDS)
@@ -241,8 +254,9 @@ func getNews(channels []string) (news []Message, err error) {
 			re := regexp.MustCompile(`<br\s+/?>`)
 			cleanStr := re.ReplaceAllString(str, "")
 			post := Message{
-				ID:   message.ID,
-				Html: cleanStr,
+				ID:      message.ID,
+				Html:    cleanStr,
+				Channel: channel,
 			}
 			news = append(news, post)
 		}
