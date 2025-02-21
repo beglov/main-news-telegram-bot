@@ -53,10 +53,11 @@
     group: deploy # Change group if needed
     mode: "0644" # Set file permissions
 
-- name: Add cron job to run send_news every hour
+- name: Add cron job to run send_news every 3 hours
+  tags: [cron]
   ansible.builtin.cron:
-    name: Run send_news every hour
+    name: Run send_news on schedule
     minute: "0"
-    hour: "*"
+    hour: "*/3"
     user: deploy # User under which to run the cron job
     job: cd /home/deploy/main-news-telegram-bot && ./send_news > cron_output.txt 2>&1
