@@ -2,17 +2,21 @@ package main
 
 import (
 	"encoding/json"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
 	"os"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 )
 
 const filePath = "chatIDS.json"
 
 func main() {
-	godotenv.Load(".env")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
 
 	chatIDS, err := readChatIDS()
 	if err != nil {
@@ -84,7 +88,7 @@ func saveChatID(chatIDS []int64, chatID int64) ([]int64, error) {
 	}
 
 	// Write the JSON data to a file
-	err = ioutil.WriteFile(filePath, data, 0644)
+	err = ioutil.WriteFile(filePath, data, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +98,6 @@ func saveChatID(chatIDS []int64, chatID int64) ([]int64, error) {
 
 func readChatIDS() (chatIDS []int64, err error) {
 	_, err = os.Stat(filePath)
-
 	// File doesn't exists
 	if err != nil {
 		return chatIDS, nil

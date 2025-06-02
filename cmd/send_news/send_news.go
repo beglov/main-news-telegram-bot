@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,11 +11,16 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 )
 
-const chatIDSFilePath = "chatIDS.json"
-const newsIDSFilePath = "newsIDS_new.json"
-const offset = "0"
+const (
+	chatIDSFilePath = "chatIDS.json"
+	newsIDSFilePath = "newsIDS.json"
+	offset          = "0"
+)
 
 type Message struct {
 	ID       int    `json:"id"`
@@ -37,7 +40,10 @@ type Response struct {
 }
 
 func main() {
-	godotenv.Load(".env")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
 
 	chatIDS, err := readChatIDS()
 	if err != nil {
@@ -129,7 +135,6 @@ func buildCompositeID(message Message) string {
 
 func readChatIDS() (chatIDS []int64, err error) {
 	_, err = os.Stat(chatIDSFilePath)
-
 	// File doesn't exists
 	if err != nil {
 		return chatIDS, nil
@@ -153,7 +158,6 @@ func readChatIDS() (chatIDS []int64, err error) {
 // readAlreadySendNewsIDS возвращает список ID-шников уже отправленных новостей.
 func readAlreadySendNewsIDS() (newsIDS []string, err error) {
 	_, err = os.Stat(newsIDSFilePath)
-
 	// File doesn't exists
 	if err != nil {
 		return newsIDS, nil
@@ -194,7 +198,7 @@ func saveAlreadySendNews(newsIDS []string, message Message) ([]string, error) {
 	}
 
 	// Write the JSON data to a file
-	err = ioutil.WriteFile(newsIDSFilePath, data, 0644)
+	err = ioutil.WriteFile(newsIDSFilePath, data, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -221,15 +225,16 @@ func getNews(channels []string) (news []Message, err error) {
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("rapid API response status %d: %s", resp.StatusCode, resp.Body)
-		}
-
+		log.Printf("Response status: %s", resp.Status)
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("can't read response body: %w", err)
 		}
-		log.Printf("Rapid API response for %s channel:\n%s", channel, string(body))
+		log.Printf("Response body: %s", string(body))
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
 
 		var data Response
 		err = json.Unmarshal(body, &data)
